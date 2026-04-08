@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Plus, ListFilter, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
@@ -27,7 +27,7 @@ function LegendItem({ iconSrc, label, dbCategory, isActive, onClick }: { iconSrc
     );
 }
 
-export default function MapaPage() {
+function MapaContent() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLegendOpen, setIsLegendOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -84,5 +84,13 @@ export default function MapaPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function MapaPage() {
+    return (
+        <Suspense fallback={<div className="w-full h-screen bg-slate-950 flex items-center justify-center animate-pulse text-slate-400 font-bold">Cargando Territorial...</div>}>
+            <MapaContent />
+        </Suspense>
     );
 }
