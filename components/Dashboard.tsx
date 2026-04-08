@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { DISTRICTS } from '@/lib/mockData';
 import { ChevronDown, Calendar } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const MONTHS = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -21,48 +21,105 @@ function DashboardCard({ title, value, subtitle }: any) {
 }
 
 export default function Dashboard() {
-    const [selectedMonth, setSelectedMonth] = useState('Marzo');
+    const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
     const [isYearOpen, setIsYearOpen] = useState(false);
+    const [reports, setReports] = useState<any[]>([]);
 
-    // Dynamic metrics based on month
-    const metrics = useMemo(() => {
-        const seed = selectedMonth.length;
-        return {
-            abandonment: (12 + (seed % 5)).toFixed(1) + '%',
-            responseDays: (7 + (seed % 4)).toFixed(1),
-            verified: 100 + (seed * 3)
+    useEffect(() => {
+        // Obtenemos reportes de todo el sistema para análisis real
+        const fetchAll = async () => {
+            const { data } = await supabase.from('reports').select('*');
+            if (data) setReports(data);
         };
-    }, [selectedMonth]);
+        fetchAll();
 
-    // Generate stable but "filtered" look data based on the selected month
+        // Suscribirse a cambios en vivo
+        const channel = supabase.channel('dashboard_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
+                fetchAll();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
+
+    // Filter reports by selected month (basic approach matching month index)
+    const filteredReports = useMemo(() => {
+        const monthIndex = MONTHS.indexOf(selectedMonth);
+        return reports.filter(r => new Date(r.created_at).getMonth() === monthIndex);
+    }, [reports, selectedMonth]);
+
+    // Dynamic metrics 
+    const metrics = useMemo(() => {
+        if (filteredReports.length === 0) return { abandonment: '0%', responseDays: '0', verified: 0 };
+        
+        const unresolved = filteredReports.filter(r => r.status === 'Pendiente').length;
+        const verified = filteredReports.filter(r => r.status === 'Verificado').length;
+        
+        let totalDays = 0;
+        filteredReports.forEach(r => {
+            const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
+            totalDays += days;
+        });
+
+        return {
+            abandonment: ((unresolved / filteredReports.length) * 100).toFixed(1) + '%',
+            responseDays: (totalDays / filteredReports.length).toFixed(1),
+            verified: verified
+        };
+    }, [filteredReports]);
+
+    // Data distribution by district
     const abandonmentData = useMemo(() => {
-        // Seed based on month name to keep it stable during re-renders but different per month
-        const seed = selectedMonth.length;
-        return DISTRICTS.map((d, i) => ({
-            name: d.split(' ')[0],
-            value: Math.floor((Math.sin(seed + i) * 10) + 15) // Dynamic but deterministic
-        }));
-    }, [selectedMonth]);
+        if (filteredReports.length === 0) return [];
+        const counts: Record<string, number> = {};
+        filteredReports.forEach(r => {
+            const dist = r.district || 'Desconocido';
+            counts[dist] = (counts[dist] || 0) + 1;
+        });
+        return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    }, [filteredReports]);
 
+    // Time buckets
     const responseTimeData = useMemo(() => {
-        const seed = selectedMonth.length;
-        return [
-            { name: '0-2 días', value: 30 + (seed % 20), color: '#22c55e' },
-            { name: '3-7 días', value: 25 + (seed % 15), color: '#a3e635' },
-            { name: '7-15 días', value: 15 + (seed % 10), color: '#f59e0b' },
-            { name: '+15 días', value: 10 + (seed % 5), color: '#ef4444' },
-        ];
-    }, [selectedMonth]);
+        let buckets = [0, 0, 0, 0]; // 0-2, 3-7, 7-15, +15
+        filteredReports.forEach(r => {
+            const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
+            if (days <= 2) buckets[0]++;
+            else if (days <= 7) buckets[1]++;
+            else if (days <= 15) buckets[2]++;
+            else buckets[3]++;
+        });
+        
+        if (filteredReports.length === 0) return []; // Empty state
 
-    const categoriesData = useMemo(() => {
-        const seed = selectedMonth.length;
         return [
-            { name: 'Seguridad', value: 40 + (seed * 2), time: (5 + (seed % 3)).toFixed(1) },
-            { name: 'Infraestructura', value: 30 + (seed * 1.5), time: (12 + (seed % 5)).toFixed(1) },
-            { name: 'Agua/Cloacas', value: 20 + (seed * 1), time: (8 + (seed % 4)).toFixed(1) },
-            { name: 'Alumbrado', value: 25 + (seed * 1.2), time: (3 + (seed % 2)).toFixed(1) },
-        ].sort((a, b) => b.value - a.value);
-    }, [selectedMonth]);
+            { name: '0-2 días', value: buckets[0], color: '#22c55e' },
+            { name: '3-7 días', value: buckets[1], color: '#a3e635' },
+            { name: '7-15 días', value: buckets[2], color: '#f59e0b' },
+            { name: '+15 días', value: buckets[3], color: '#ef4444' },
+        ].filter(d => d.value > 0);
+    }, [filteredReports]);
+
+    // Categories
+    const categoriesData = useMemo(() => {
+        const catMap: Record<string, { count: number, totalDays: number }> = {};
+        filteredReports.forEach(r => {
+            const c = r.category || 'Otros';
+            const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
+            if (!catMap[c]) catMap[c] = { count: 0, totalDays: 0 };
+            catMap[c].count++;
+            catMap[c].totalDays += days;
+        });
+        
+        return Object.entries(catMap)
+            .map(([name, data]) => ({
+                name,
+                value: data.count,
+                time: (data.totalDays / data.count).toFixed(1)
+            }))
+            .sort((a, b) => b.value - a.value);
+    }, [filteredReports]);
 
     return (
         <div className="space-y-8">
@@ -135,25 +192,29 @@ export default function Dashboard() {
                 <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5 backdrop-blur-sm">
                     <h3 className="text-lg font-bold mb-6 text-slate-200">Tipos de Reclamos y Respuesta - {selectedMonth}</h3>
                     <div className="space-y-4">
-                        {categoriesData.map((cat, i) => (
-                            <div key={i} className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-300 font-medium">{cat.name}</span>
-                                    <span className="text-blue-400 font-bold">{cat.value} reportes</span>
+                        {categoriesData.length === 0 ? (
+                            <p className="text-slate-500 text-sm italic">Sin reportes registrados en este mes.</p>
+                        ) : (
+                            categoriesData.map((cat, i) => (
+                                <div key={i} className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-300 font-medium">{cat.name}</span>
+                                        <span className="text-blue-400 font-bold">{cat.value} reportes</span>
+                                    </div>
+                                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                            style={{ width: `${Math.min(100, (cat.value / Math.max(1, filteredReports.length)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                                            Tiempo promedio abierto: <span className="text-amber-400 font-bold">{cat.time} días</span>
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                                        style={{ width: `${(cat.value / 60) * 100}%` }}
-                                    />
-                                </div>
-                                <div className="flex justify-end">
-                                    <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                                        Tiempo medio de solución: <span className="text-amber-400 font-bold">{cat.time} días</span>
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
 

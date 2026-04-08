@@ -4,8 +4,13 @@ import { Target, CheckCircle2, Star, Shield, Zap, Search, Users, MapPin } from '
 import dynamic from 'next/dynamic';
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false }) as any;
+import { useRouter } from 'next/navigation';
 
-export default function SITInfo({ goToMap, openReport }: { goToMap?: () => void, openReport?: () => void }) {
+export default function SITInfo() {
+    const router = useRouter();
+    
+    const goToMap = () => router.push('/mapa');
+    const openReport = () => router.push('/mapa?report=new');
     return (
         <div className="max-w-4xl mx-auto space-y-12 pb-20">
             {/* Hero Section */}

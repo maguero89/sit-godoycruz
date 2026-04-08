@@ -2,7 +2,7 @@ export type ReportStatus = 'Pendiente' | 'Verificado' | 'Desestimado';
 
 export interface Report {
     id: string;
-    category: 'Seguridad' | 'Infraestructura' | 'Agua/Cloacas' | 'Alumbrado';
+    category: 'Arbolado' | 'Veredas Rotas' | 'Higiene Urbana' | 'Alumbrado Público' | 'Seguridad' | 'Cortes de Agua' | 'Problemas Cloacales' | 'Baches';
     subCategory: string;
     description: string;
     coords: [number, number];
@@ -38,8 +38,8 @@ export const MOCK_REPORTS: Report[] = [
     },
     {
         id: '2',
-        category: 'Infraestructura',
-        subCategory: 'Bache',
+        category: 'Baches',
+        subCategory: 'Bache Profundo',
         description: 'Bache profundo que rompe cubiertas.',
         coords: [-32.925, -68.855],
         timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
@@ -50,7 +50,7 @@ export const MOCK_REPORTS: Report[] = [
     },
     {
         id: '3',
-        category: 'Alumbrado',
+        category: 'Alumbrado Público',
         subCategory: 'Zona Oscura',
         description: 'Faro roto hace semanas, calle muy peligrosa.',
         coords: [-32.935, -68.865],
@@ -62,7 +62,7 @@ export const MOCK_REPORTS: Report[] = [
     },
     {
         id: '4',
-        category: 'Infraestructura',
+        category: 'Veredas Rotas',
         subCategory: 'Vereda Rota',
         description: 'Vereda intransitable por raíces de árboles, zona escolar.',
         coords: [-32.945, -68.875],
@@ -74,7 +74,7 @@ export const MOCK_REPORTS: Report[] = [
     },
     {
         id: '5',
-        category: 'Agua/Cloacas',
+        category: 'Cortes de Agua',
         subCategory: 'Pérdida de Agua',
         description: 'Caño maestro roto inundando la vereda.',
         coords: [-32.920, -68.860],
@@ -86,9 +86,9 @@ export const MOCK_REPORTS: Report[] = [
     },
     {
         id: '6',
-        category: 'Seguridad',
-        subCategory: 'Arrebato',
-        description: 'Motochorros merodeando la zona comercial.',
+        category: 'Arbolado',
+        subCategory: 'Rama Caída',
+        description: 'Rama grande obstaculizando la calle.',
         coords: [-32.930, -68.840],
         timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'Pendiente',
@@ -98,9 +98,9 @@ export const MOCK_REPORTS: Report[] = [
     },
     {
         id: '7',
-        category: 'Alumbrado',
-        subCategory: 'Corte de Luz',
-        description: 'Toda la cuadra sin luz pública desde ayer.',
+        category: 'Problemas Cloacales',
+        subCategory: 'Desborde',
+        description: 'Desborde cloacal en la esquina.',
         coords: [-32.940, -68.850],
         timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'Verificado',
@@ -110,7 +110,7 @@ export const MOCK_REPORTS: Report[] = [
     },
     {
         id: '8',
-        category: 'Infraestructura',
+        category: 'Higiene Urbana',
         subCategory: 'Limpieza',
         description: 'Microbasural acumulado en el descampado.',
         coords: [-32.910, -68.870],

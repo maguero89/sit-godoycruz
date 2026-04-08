@@ -359,19 +359,16 @@ export const GODOY_CRUZ_POLYGON = [
 ];
 
 /**
- * Verifica si un punto (lat, lng) está dentro de las coordenadas de Godoy Cruz.
- * Implementación simplificada usando el algoritmo de Ray-casting.
+ * Verifica si un punto (lat, lng) está dentro de la zona de Godoy Cruz.
+ * Utiliza un Bounding Box (Caja Delimitadora) generoso para evitar falsos negativos 
+ * en lugar de evaluar aristas de polígonos irregulares.
  */
 export function isInsideGodoyCruz(lat: number, lng: number): boolean {
-  let isInside = false;
-  const poly = GODOY_CRUZ_POLYGON;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const xi = poly[i][0], yi = poly[i][1];
-    const xj = poly[j][0], yj = poly[j][1];
+  // Limites aproximados del departamento de Godoy Cruz, Mendoza.
+  const latNorth = -32.880; // Más cerca al centro de Mza
+  const latSouth = -32.980; // Zona sur Lujan
+  const lngWest = -69.050; // Zona de Montaña / Piedemonte
+  const lngEast = -68.810; // Zona Costanera límite con Guaymallen
 
-    const intersect = ((yi > lng) !== (yj > lng))
-      && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
-    if (intersect) isInside = !isInside;
-  }
-  return isInside;
+  return (lat <= latNorth && lat >= latSouth) && (lng >= lngWest && lng <= lngEast);
 }

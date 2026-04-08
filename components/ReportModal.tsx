@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Camera, MapPin, Send, AlertCircle, CheckCircle2, Navigation, Edit3 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { isInsideGodoyCruz } from '@/lib/geofencing';
+import { supabase } from '@/lib/supabase';
 
 const LocationPickerMap = dynamic(() => import('@/components/LocationPickerMap'), { ssr: false, loading: () => <div className="w-full h-64 bg-slate-800 animate-pulse rounded-xl"></div> });
 
@@ -22,10 +23,12 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
         category: '',
         description: '',
         isAnonymous: false,
+        name: '',
         email: '',
         phone: '',
         coords: null as [number, number] | null,
     });
+    const [photo, setPhoto] = useState<File | null>(null);
 
     const [locationMode, setLocationMode] = useState<'select' | 'gps' | 'manual' | 'map'>('select');
     const [manualAddress, setManualAddress] = useState({ street: '', number: '' });
@@ -35,7 +38,8 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
     const handleClose = () => {
         setStep(1);
         setLocationMode('select');
-        setFormData({ category: '', description: '', isAnonymous: false, email: '', phone: '', coords: null });
+        setFormData({ category: '', description: '', isAnonymous: false, name: '', email: '', phone: '', coords: null });
+        setPhoto(null);
         setSuccess(false);
         setError(null);
         setSelectedMapPos(null);
@@ -116,14 +120,72 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        // Simular envío a Supabase
-        setTimeout(() => {
-            setSuccess(true);
+        setError(null);
+
+        if (!formData.coords) {
+            setError("Error: Coordenadas no disponibles.");
             setLoading(false);
-        }, 1500);
+            return;
+        }
+
+        try {
+            let finalPhotoUrl = null;
+            
+            // Subir foto si existe
+            if (photo) {
+                const fileExt = photo.name.split('.').pop() || 'jpg';
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('report-photos')
+                    .upload(fileName, photo, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error("Storage Error:", uploadError);
+                    throw new Error("No pudimos subir la fotografía. " + uploadError.message);
+                }
+
+                if (uploadData) {
+                    const { data: publicUrlData } = supabase.storage
+                        .from('report-photos')
+                        .getPublicUrl(fileName);
+                    finalPhotoUrl = publicUrlData.publicUrl;
+                }
+            }
+
+            // Insertar metadata en BD
+            const { error: insertError } = await supabase
+                .from('reports')
+                .insert([
+                    {
+                        category: formData.category,
+                        description: formData.description,
+                        lat: formData.coords[0],
+                        lng: formData.coords[1],
+                        is_anonymous: formData.isAnonymous,
+                        name: formData.name || null,
+                        email: formData.email || null,
+                        phone: formData.phone || null,
+                        district: 'Desconocido', // Or derive district if needed
+                        photo_url: finalPhotoUrl
+                    }
+                ]);
+
+            if (insertError) throw insertError;
+
+            setSuccess(true);
+        } catch (err: any) {
+            console.error("Error al enviar a Supabase:", err);
+            setError("Ocurrió un error al enviar tu reporte. Revisa tu conexión a internet.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -290,10 +352,14 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
                                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                         >
                                             <option value="">Selecciona una opción...</option>
-                                            <option value="Seguridad">Seguridad (Robo, Zona Peligrosa)</option>
-                                            <option value="Infraestructura">Infraestructura (Bache, Vereda)</option>
-                                            <option value="Agua/Cloacas">Agua o Cloacas (Pérdida, Rotura)</option>
-                                            <option value="Alumbrado">Alumbrado (Faro quemado, Zona Oscura)</option>
+                                            <option value="Arbolado">Arbolado</option>
+                                            <option value="Veredas Rotas">Veredas Rotas</option>
+                                            <option value="Higiene Urbana">Higiene Urbana</option>
+                                            <option value="Alumbrado Público">Alumbrado Público</option>
+                                            <option value="Seguridad">Seguridad</option>
+                                            <option value="Cortes de Agua">Cortes de Agua</option>
+                                            <option value="Problemas Cloacales">Problemas Cloacales</option>
+                                            <option value="Baches">Baches</option>
                                         </select>
                                     </div>
 
@@ -307,12 +373,26 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
                                         />
                                     </div>
 
-                                    <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-white/5">
-                                        <div className="flex items-center gap-3">
-                                            <Camera className="text-slate-400" />
-                                            <span className="text-sm text-slate-300">Subir una foto</span>
+                                    <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-white/5 relative">
+                                        <div className="flex items-center gap-3 overflow-hidden flex-1 mr-4">
+                                            <Camera className={photo ? "text-blue-400" : "text-slate-400"} />
+                                            <span className={`text-sm truncate ${photo ? "text-blue-300 font-medium" : "text-slate-300"}`}>
+                                                {photo ? photo.name : "Subir una foto principal"}
+                                            </span>
                                         </div>
-                                        <button type="button" className="text-xs bg-white/5 hover:bg-white/10 px-3 py-1 rounded-md text-slate-400 transition-colors">Adjuntar</button>
+                                        <label className="cursor-pointer text-xs bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-white font-medium transition-colors shadow-lg">
+                                            <span>{photo ? "Cambiar" : "Adjuntar"}</span>
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                className="hidden" 
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        setPhoto(e.target.files[0]);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
                                     </div>
 
                                     <div className="flex items-center gap-3 py-2">
@@ -330,6 +410,13 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
                                         <div className="space-y-4 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10 animate-in slide-in-from-top-2 duration-300">
                                             <p className="text-xs font-bold text-blue-400 uppercase tracking-widest">Datos de Contacto (Opcional)</p>
                                             <div className="grid grid-cols-1 gap-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nombre y Apellido"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
                                                 <input
                                                     type="email"
                                                     placeholder="Correo Electrónico"

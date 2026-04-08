@@ -4,57 +4,40 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { MOCK_REPORTS, Report } from '@/lib/mockData';
+import { supabase } from '@/lib/supabase';
+import { Report } from '@/lib/mockData';
 // Geofencing data still used for logic, map now uses GeoJSON
-import { isInsideGodoyCruz } from '@/lib/geofencing';
-import { Shield, Wrench, Droplet, Lightbulb, MapPin } from 'lucide-react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { ShieldAlert, MapPin, TreePine, Footprints, Trash2, LightbulbOff, Droplet, Waves, CircleDashed } from 'lucide-react';
 
 // Rediseño de iconos: Estética tecnológica y premium
 const createCustomIcon = (category: string, status: string) => {
-    let color = '#3b82f6';
-    let IconPath: React.ElementType = MapPin;
+    let iconSrc = '';
 
     switch (category) {
-        case 'Seguridad': color = '#ff4b4b'; IconPath = Shield; break;
-        case 'Infraestructura': color = '#f97316'; IconPath = Wrench; break;
-        case 'Agua/Cloacas': color = '#0ea5e9'; IconPath = Droplet; break;
-        case 'Alumbrado': color = '#fbbf24'; IconPath = Lightbulb; break;
+        case 'Arbolado': iconSrc = '/icons/Arbolado.png'; break;
+        case 'Veredas Rotas': iconSrc = '/icons/Veredas Rotas.png'; break;
+        case 'Higiene Urbana': iconSrc = '/icons/Higiene Urbana.png'; break;
+        case 'Alumbrado Público': iconSrc = '/icons/Alumbrado Publico.png'; break;
+        case 'Seguridad': iconSrc = '/icons/Seguridad.png'; break;
+        case 'Cortes de Agua': iconSrc = '/icons/Cortes de Agua.png'; break;
+        case 'Problemas Cloacales': iconSrc = '/icons/Problemas Cloacales.png'; break;
+        case 'Baches': iconSrc = '/icons/Baches.png'; break;
     }
 
     const isPending = status === 'Pendiente';
 
-    const iconMarkup = renderToStaticMarkup(
-        <div className={`relative flex items-center justify-center ${isPending ? 'animate-marker-pulse' : ''}`}>
-            {/* Glow effect */}
-            <div
-                className="absolute inset-0 rounded-full blur-md opacity-60"
-                style={{ backgroundColor: color }}
-            ></div>
-
-            {/* Main glass container */}
-            <div
-                className="relative z-10 w-10 h-10 rounded-full flex items-center justify-center border-2 border-white/40 shadow-xl backdrop-blur-md"
-                style={{
-                    background: `linear-gradient(135deg, ${color}cc, ${color}88)`,
-                }}
-            >
-                <IconPath size={22} color="white" strokeWidth={2.5} />
-            </div>
-
-            {/* Bottom pointer */}
-            <div
-                className="absolute -bottom-1 w-3 h-3 rotate-45 z-0 border-r-2 border-b-2 border-white/40 shadow-lg"
-                style={{ backgroundColor: `${color}aa` }}
-            ></div>
-        </div>
-    );
+    const safeUrl = encodeURI(iconSrc);
+    // Increase size and use inline CSS for absolute safety in Leaflet markers
+    const iconMarkup = `<div class="relative flex items-center justify-center ${isPending ? 'animate-marker-pulse' : ''} cursor-pointer" style="width: 50px; height: 50px; filter: drop-shadow(0px 8px 12px rgba(0,0,0,0.4)); transform-origin: center bottom; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <img src="${safeUrl}" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>`;
 
     return L.divIcon({
         html: iconMarkup,
-        className: 'custom-div-icon',
-        iconSize: [40, 48],
-        iconAnchor: [20, 48],
+        className: 'custom-div-icon bg-transparent border-none',
+        iconSize: [50, 50],
+        iconAnchor: [25, 50],
+        popupAnchor: [0, -50],
     });
 };
 
@@ -64,19 +47,54 @@ function ChangeView({ center }: { center: [number, number] }) {
     return null;
 }
 
-export default function MapComponent({ isMini = false }: { isMini?: boolean }) {
+export default function MapComponent({ isMini = false, activeFilter = null }: { isMini?: boolean, activeFilter?: string | null }) {
     const [reports, setReports] = useState<Report[]>([]);
     const [geoJsonData, setGeoJsonData] = useState<any>(null);
     const center: [number, number] = [-32.923, -68.868]; // Godoy Cruz Center approx
 
     useEffect(() => {
-        setReports(MOCK_REPORTS);
+        const fetchReports = async () => {
+            const { data, error } = await supabase
+                .from('reports')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (data && !error) {
+                const formatted = data.map((r: any) => ({
+                    id: r.id,
+                    category: r.category,
+                    subCategory: r.subcategory || '',
+                    description: r.description,
+                    coords: [r.lat, r.lng] as [number, number],
+                    timestamp: r.created_at,
+                    status: r.status,
+                    daysWithoutResponse: Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24)),
+                    district: r.district || 'Desconocido',
+                    isAnonymous: r.is_anonymous,
+                    photo_url: r.photo_url,
+                }));
+                setReports(formatted as any); // Type cast until we replace the strict mock interface entirely
+            }
+        };
+
+        fetchReports();
+
+        // Suscribirse a cambios en vivo en la base de datos
+        const channel = supabase.channel('map_realtime_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
+                fetchReports(); // Refrescar los puntos en vivo
+            })
+            .subscribe();
 
         // Cargar GeoJSON de límites departamentales
         fetch('/mendoza-departments.json')
             .then(res => res.json())
             .then(data => setGeoJsonData(data))
             .catch(err => console.error('Error loading GeoJSON:', err));
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const geoJsonStyle = (feature: any) => {
@@ -96,8 +114,8 @@ export default function MapComponent({ isMini = false }: { isMini?: boolean }) {
             <MapContainer
                 center={center}
                 zoom={isMini ? 12 : 13}
-                scrollWheelZoom={!isMini}
-                dragging={!isMini}
+                scrollWheelZoom={true}
+                dragging={true}
                 zoomControl={false}
                 className="w-full h-full"
             >
@@ -114,7 +132,7 @@ export default function MapComponent({ isMini = false }: { isMini?: boolean }) {
                     />
                 )}
 
-                {reports.map((report) => (
+                {reports.filter(r => !activeFilter || r.category === activeFilter).map((report) => (
                     <Marker
                         key={report.id}
                         position={report.coords}
@@ -122,8 +140,13 @@ export default function MapComponent({ isMini = false }: { isMini?: boolean }) {
                     >
                         <Popup className="custom-popup">
                             <div className="p-2">
-                                <h3 className="font-bold text-lg text-slate-900">{report.category} - {report.subCategory}</h3>
-                                <p className="text-sm text-slate-700 mt-1">{report.description}</p>
+                                <h3 className="font-bold text-lg text-slate-900">{report.category} {report.subCategory ? `- ${report.subCategory}` : ''}</h3>
+                                {(report as any).photo_url && (
+                                    <div className="w-full h-32 mt-2 rounded-lg overflow-hidden bg-slate-200 border border-slate-300">
+                                        <img src={(report as any).photo_url} alt="Evidencia ciudadana" className="w-full h-full object-cover" />
+                                    </div>
+                                )}
+                                <p className="text-sm text-slate-700 mt-2">{report.description}</p>
                                 <div className="mt-2 flex items-center justify-between">
                                     <span className={`px-2 py-1 rounded text-xs font-semibold ${report.status === 'Verificado' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                                         }`}>

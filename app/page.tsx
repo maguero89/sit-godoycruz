@@ -1,12 +1,11 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-
-const ClientHome = dynamic(() => import('@/components/ClientHome'), {
-    ssr: false,
-    loading: () => <div className="w-full h-screen bg-slate-950 flex items-center justify-center text-slate-400 font-bold animate-pulse">Iniciando Se Busca Intendente Godoy Cruz...</div>
-});
+import SITInfo from '@/components/SITInfo';
 
 export default function Home() {
-    return <ClientHome />;
+    return (
+        <div className="w-full h-full overflow-y-auto bg-slate-950 pt-8 pb-32">
+            <SITInfo />
+        </div>
+    );
 }

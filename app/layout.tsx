@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
     title: "Se Busca Intendente Godoy Cruz - Inteligencia Territorial",
@@ -16,8 +17,9 @@ export default function RootLayout({
         <html lang="es" suppressHydrationWarning>
             <head>
             </head>
-            <body suppressHydrationWarning>
+            <body suppressHydrationWarning className="bg-slate-950 text-white min-h-screen">
                 <main>{children}</main>
+                <Navbar />
             </body>
         </html>
     );
