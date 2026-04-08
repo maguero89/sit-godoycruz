@@ -19,7 +19,14 @@ export default function AdminPanel() {
     }, []);
 
     const updateStatus = async (id: string, newStatus: string) => {
-        const { error } = await supabase.from('reports').update({ status: newStatus }).eq('id', id);
+        const updateData: any = { status: newStatus };
+        if (newStatus === 'Resuelto') {
+            updateData.resolved_at = new Date().toISOString();
+        } else {
+            updateData.resolved_at = null;
+        }
+
+        const { error } = await supabase.from('reports').update(updateData).eq('id', id);
         if (error) {
             alert("No se pudo actualizar el estado. Verifica si tienes permisos (RLS policies) en tu base de datos.\nDetalle: " + error.message);
         } else {
@@ -108,10 +115,11 @@ export default function AdminPanel() {
                                             <select 
                                                 value={r.status}
                                                 onChange={(e) => updateStatus(r.id, e.target.value)}
-                                                className={`bg-slate-950 appearance-none px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider outline-none cursor-pointer border transition-colors hover:shadow-lg ${r.status === 'Verificado' ? 'bg-green-500/10 text-green-400 border-green-500/30 hover:border-green-500/60' : r.status === 'Pendiente' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:border-amber-500/60' : 'bg-red-500/10 text-red-400 border-red-500/30 hover:border-red-500/60'}`}
+                                                className={`bg-slate-950 appearance-none px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider outline-none cursor-pointer border transition-colors hover:shadow-lg ${r.status === 'Verificado' ? 'bg-green-500/10 text-green-400 border-green-500/30 hover:border-green-500/60' : r.status === 'Resuelto' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:border-blue-500/60' : r.status === 'Pendiente' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:border-amber-500/60' : 'bg-red-500/10 text-red-400 border-red-500/30 hover:border-red-500/60'}`}
                                             >
                                                 <option value="Pendiente">⏳ Pendiente</option>
-                                                <option value="Verificado">✅ Verificado</option>
+                                                <option value="Verificado">🔍 Verificado</option>
+                                                <option value="Resuelto">✅ Resuelto</option>
                                                 <option value="Desestimado">❌ Desestimado</option>
                                             </select>
                                         </td>

@@ -68,7 +68,7 @@ export default function MapComponent({ isMini = false, activeFilter = null }: { 
                     coords: [r.lat, r.lng] as [number, number],
                     timestamp: r.created_at,
                     status: r.status,
-                    daysWithoutResponse: Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24)),
+                    daysWithoutResponse: Math.floor(((r.resolved_at ? new Date(r.resolved_at).getTime() : Date.now()) - new Date(r.created_at).getTime()) / (1000 * 3600 * 24)),
                     district: r.district || 'Desconocido',
                     isAnonymous: r.is_anonymous,
                     photo_url: r.photo_url,
@@ -148,11 +148,13 @@ export default function MapComponent({ isMini = false, activeFilter = null }: { 
                                 )}
                                 <p className="text-sm text-slate-700 mt-2">{report.description}</p>
                                 <div className="mt-2 flex items-center justify-between">
-                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${report.status === 'Verificado' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${report.status === 'Resuelto' ? 'bg-blue-100 text-blue-700' : report.status === 'Verificado' ? 'bg-green-100 text-green-700' : report.status === 'Desestimado' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
                                         }`}>
                                         {report.status}
                                     </span>
-                                    <span className="text-xs text-slate-500">Hace {report.daysWithoutResponse} días</span>
+                                    <span className={`text-xs font-medium ${report.status === 'Resuelto' ? 'text-blue-600' : 'text-slate-500'}`}>
+                                        {report.status === 'Resuelto' ? `En ${report.daysWithoutResponse} días` : `Hace ${report.daysWithoutResponse} días`}
+                                    </span>
                                 </div>
                                 <p className="text-[10px] text-slate-400 mt-2">Distrito: {report.district}</p>
                             </div>

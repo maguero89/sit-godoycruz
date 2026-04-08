@@ -49,23 +49,28 @@ export default function Dashboard() {
         return reports.filter(r => new Date(r.created_at).getMonth() === monthIndex);
     }, [reports, selectedMonth]);
 
+    // Calculator helper
+    const calculateDays = (r: any) => {
+        const end = r.resolved_at ? new Date(r.resolved_at).getTime() : Date.now();
+        return Math.floor((end - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
+    };
+
     // Dynamic metrics 
     const metrics = useMemo(() => {
-        if (filteredReports.length === 0) return { abandonment: '0%', responseDays: '0', verified: 0 };
+        if (filteredReports.length === 0) return { abandonment: '0%', responseDays: '0', completed: 0 };
         
-        const unresolved = filteredReports.filter(r => r.status === 'Pendiente').length;
-        const verified = filteredReports.filter(r => r.status === 'Verificado').length;
+        const unresolved = filteredReports.filter(r => r.status !== 'Resuelto').length;
+        const completed = filteredReports.filter(r => r.status === 'Resuelto').length;
         
         let totalDays = 0;
         filteredReports.forEach(r => {
-            const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
-            totalDays += days;
+            totalDays += calculateDays(r);
         });
 
         return {
             abandonment: ((unresolved / filteredReports.length) * 100).toFixed(1) + '%',
             responseDays: (totalDays / filteredReports.length).toFixed(1),
-            verified: verified
+            completed: completed
         };
     }, [filteredReports]);
 
@@ -73,7 +78,8 @@ export default function Dashboard() {
     const abandonmentData = useMemo(() => {
         if (filteredReports.length === 0) return [];
         const counts: Record<string, number> = {};
-        filteredReports.forEach(r => {
+        // Solo contamos los reclamos NO resueltos para el gráfico de abandono
+        filteredReports.filter(r => r.status !== 'Resuelto').forEach(r => {
             const dist = r.district || 'Desconocido';
             counts[dist] = (counts[dist] || 0) + 1;
         });
@@ -84,7 +90,7 @@ export default function Dashboard() {
     const responseTimeData = useMemo(() => {
         let buckets = [0, 0, 0, 0]; // 0-2, 3-7, 7-15, +15
         filteredReports.forEach(r => {
-            const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
+            const days = calculateDays(r);
             if (days <= 2) buckets[0]++;
             else if (days <= 7) buckets[1]++;
             else if (days <= 15) buckets[2]++;
@@ -106,7 +112,7 @@ export default function Dashboard() {
         const catMap: Record<string, { count: number, totalDays: number }> = {};
         filteredReports.forEach(r => {
             const c = r.category || 'Otros';
-            const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
+            const days = calculateDays(r);
             if (!catMap[c]) catMap[c] = { count: 0, totalDays: 0 };
             catMap[c].count++;
             catMap[c].totalDays += days;
@@ -125,9 +131,9 @@ export default function Dashboard() {
         <div className="space-y-8">
             {/* Top Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                <DashboardCard title="Índice de Abandono" value={metrics.abandonment} subtitle="Promedio Departamental" />
-                <DashboardCard title="Días sin Respuesta" value={metrics.responseDays} subtitle="Promedio de incidentes" />
-                <DashboardCard title="Reportes Verificados" value={metrics.verified} subtitle={`Mes de ${selectedMonth}`} />
+                <DashboardCard title="Índice de Abandono" value={metrics.abandonment} subtitle="Promedio Departamental (Sin resolver)" />
+                <DashboardCard title="Días Abierto Promedio" value={metrics.responseDays} subtitle="Tiempo histórico de resolución" />
+                <DashboardCard title="Reportes Resueltos" value={metrics.completed} subtitle={`Mes de ${selectedMonth}`} />
             </div>
 
             {/* Filter Bar */}

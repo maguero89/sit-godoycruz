@@ -1,4 +1,4 @@
-export type ReportStatus = 'Pendiente' | 'Verificado' | 'Desestimado';
+export type ReportStatus = 'Pendiente' | 'Verificado' | 'Resuelto' | 'Desestimado';
 
 export interface Report {
     id: string;
