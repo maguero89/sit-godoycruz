@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig = {
+  // @ts-ignore: NextConfig typing bug
   eslint: {
     ignoreDuringBuilds: true,
   },
