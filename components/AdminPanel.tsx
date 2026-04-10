@@ -2,13 +2,14 @@
 import Dashboard from '@/components/Dashboard';
 import { supabase } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
-import { Trash2, Edit, Camera } from 'lucide-react';
+import { Trash2, Edit, Camera, RefreshCw } from 'lucide-react';
 
 export default function AdminPanel() {
     const [reports, setReports] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchReports = async () => {
+        setLoading(true);
         const { data, error } = await supabase.from('reports').select('*').order('created_at', { ascending: false });
         if (data) setReports(data);
         setLoading(false);
@@ -50,9 +51,19 @@ export default function AdminPanel() {
             <Dashboard />
             
             <div className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="p-6 border-b border-white/10 bg-slate-800/50">
-                    <h3 className="text-xl font-bold text-white">Auditoría de Reclamos Recientes</h3>
-                    <p className="text-sm text-slate-400 mt-1">Gestiona el estado visible de los reportes generados por la comunidad.</p>
+                <div className="p-6 border-b border-white/10 bg-slate-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-xl font-bold text-white">Auditoría de Reclamos Recientes</h3>
+                        <p className="text-sm text-slate-400 mt-1">Gestiona el estado visible de los reportes generados por la comunidad.</p>
+                    </div>
+                    <button 
+                        onClick={fetchReports}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 text-sm group"
+                    >
+                        <RefreshCw size={18} className={`${loading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                        {loading ? 'Sincronizando...' : 'Refrescar Datos'}
+                    </button>
                 </div>
                 {loading ? (
                     <div className="p-12 text-center text-slate-400 animate-pulse">Cargando base de datos segura...</div>

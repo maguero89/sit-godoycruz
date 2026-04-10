@@ -47,10 +47,10 @@ function ChangeView({ center }: { center: [number, number] }) {
     return null;
 }
 
-export default function MapComponent({ isMini = false, activeFilter = null }: { isMini?: boolean, activeFilter?: string | null }) {
+export default function MapComponent({ isMini = false, activeFilter = null, customCenter, customZoom }: { isMini?: boolean, activeFilter?: string | null, customCenter?: [number, number], customZoom?: number }) {
     const [reports, setReports] = useState<Report[]>([]);
     const [geoJsonData, setGeoJsonData] = useState<any>(null);
-    const center: [number, number] = [-32.923, -68.868]; // Godoy Cruz Center approx
+    const center: [number, number] = customCenter || [-32.9235, -68.855]; // Godoy Cruz Center adjusted slightly to the west
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -113,7 +113,7 @@ export default function MapComponent({ isMini = false, activeFilter = null }: { 
         <div className="w-full h-full relative">
             <MapContainer
                 center={center}
-                zoom={isMini ? 12 : 13}
+                zoom={customZoom || (isMini ? 13 : 13)}
                 scrollWheelZoom={true}
                 dragging={true}
                 zoomControl={false}
