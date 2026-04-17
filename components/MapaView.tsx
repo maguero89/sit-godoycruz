@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), {
     ssr: false,
-    loading: () => <div className="w-full h-screen bg-slate-950 animate-pulse flex items-center justify-center text-slate-400 font-bold">Cargando Mapa Territorial...</div>
+    loading: () => <div className="w-full h-screen bg-transparent animate-pulse flex items-center justify-center text-slate-400 font-bold">Cargando Mapa Territorial...</div>
 });
 
 const ReportModal = dynamic(() => import('@/components/ReportModal'), { ssr: false }) as any;
@@ -40,8 +40,10 @@ function MapaViewContent() {
     }, [searchParams]);
 
     return (
-        <div className="w-full h-screen relative bg-slate-950 overflow-hidden">
-            <MapComponent activeFilter={activeFilter} />
+        <div className="w-full h-screen relative pt-4 pb-24 md:pt-8 md:pb-28 px-4 md:px-8 lg:px-12">
+            <div className="w-full h-full relative rounded-3xl md:rounded-[40px] overflow-hidden border-4 md:border-[6px] border-slate-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-slate-950">
+                <MapComponent activeFilter={activeFilter} />
+            </div>
 
             <button
                 type="button"
@@ -89,7 +91,7 @@ function MapaViewContent() {
 
 export default function MapaView() {
     return (
-        <Suspense fallback={<div className="w-full h-screen bg-slate-950 flex items-center justify-center animate-pulse text-slate-400 font-bold">Cargando Plataforma...</div>}>
+        <Suspense fallback={<div className="w-full h-screen bg-transparent flex items-center justify-center animate-pulse text-slate-400 font-bold">Cargando Plataforma...</div>}>
             <MapaViewContent />
         </Suspense>
     );

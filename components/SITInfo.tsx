@@ -14,12 +14,22 @@ export default function SITInfo() {
     return (
         <div className="max-w-4xl mx-auto space-y-12 pb-20">
             {/* Hero Section */}
-            <div className="text-center space-y-4">
-                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400">
-                    Se Busca Intendente Godoy Cruz: El Mapa de la Realidad Vecinal
+            <div className="text-center space-y-6">
+                <div className="flex justify-center mb-6">
+                    <div className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] relative group drop-shadow-[0_20px_50px_rgba(168,85,247,0.4)] mix-blend-lighten">
+                        <div className="absolute inset-0 transition-transform duration-[4s] ease-out group-hover:scale-105" style={{ 
+                            backgroundImage: "url('/branding/logo_lupa.png')", 
+                            backgroundPosition: "center", 
+                            backgroundSize: "contain",
+                            backgroundRepeat: "no-repeat"
+                        }} />
+                    </div>
+                </div>
+                <h1 className="text-6xl md:text-7xl lg:text-8xl font-black uppercase concrete-text-3d leading-tight mt-0 pt-0">
+                    Godoy Cruz<br/>Sin Gestión
                 </h1>
-                <p className="text-lg text-slate-400 leading-relaxed max-w-3xl mx-auto">
-                    Se Busca Intendente Godoy Cruz es una plataforma de tecnología cívica, independiente y colaborativa, diseñada para que los vecinos de Godoy Cruz puedan visibilizar el estado real de sus barrios. Nuestro objetivo es transformar la queja individual en un dato colectivo e irrefutable que ayude a mejorar la seguridad y la gestión de nuestro departamento.
+                <p className="text-lg text-slate-300 leading-relaxed max-w-3xl mx-auto pt-2 font-medium">
+                    <span className="text-purple-400 font-bold">GODOY CRUZ SIN GESTIÓN</span> es una plataforma de tecnología cívica, independiente y colaborativa, diseñada para que los vecinos de Godoy Cruz puedan visibilizar el estado real de sus barrios. Nuestro objetivo es transformar la queja individual en un dato colectivo e irrefutable que ayude a mejorar la seguridad y la gestión de nuestro departamento.
                 </p>
             </div>
 
@@ -101,29 +111,29 @@ export default function SITInfo() {
             </section>
 
             {/* Advantages */}
-            <section className="bg-blue-600/10 rounded-3xl border border-blue-500/20 p-8 space-y-8">
+            <section className="bg-purple-600/10 rounded-3xl border border-purple-500/20 p-8 space-y-8">
                 <div className="flex items-center gap-3">
                     <Star className="text-blue-400" />
                     <h2 className="text-2xl font-bold text-white">Ventajas para el Vecino</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <AdvantageItem
-                        icon={<Shield className="text-blue-400" />}
+                        icon={<Shield className="text-purple-400" />}
                         title="Anonimato Garantizado"
                         description="Podés reportar con total libertad. Protegemos tu identidad y solo usamos el dato geográfico para el análisis."
                     />
                     <AdvantageItem
-                        icon={<CheckCircle2 className="text-blue-400" />}
+                        icon={<CheckCircle2 className="text-purple-400" />}
                         title="Información de Calidad"
                         description="Accedés a un mapa libre de &apos;ruido&apos; o datos falsos, útil para tomar decisiones diarias sobre seguridad."
                     />
                     <AdvantageItem
-                        icon={<Users className="text-blue-400" />}
+                        icon={<Users className="text-purple-400" />}
                         title="Fuerza Colectiva"
                         description="Un reclamo individual puede ser ignorado; un mapa con decenas de reportes es una presión técnica imposible de omitir."
                     />
                     <AdvantageItem
-                        icon={<Target className="text-blue-400" />}
+                        icon={<Target className="text-purple-400" />}
                         title="Geolocalización Inteligente"
                         description="Análisis quirúrgico enfocado exclusivamente en Godoy Cruz, conocemos cada rincón del departamento."
                     />
@@ -133,7 +143,7 @@ export default function SITInfo() {
             {/* Footer Quote */}
             <div className="text-center pt-8 border-t border-white/10">
                 <blockquote className="text-xl italic text-slate-300 font-medium">
-                    &quot;Lo que no se mide, no se puede mejorar. Se Busca Intendente Godoy Cruz es la herramienta para que nuestra realidad sea vista, medida y finalmente transformada.&quot;
+                    &quot;Lo que no se mide, no se puede mejorar. GODOY CRUZ SIN GESTIÓN es la herramienta para que nuestra realidad sea vista, medida y finalmente transformada.&quot;
                 </blockquote>
             </div>
         </div>

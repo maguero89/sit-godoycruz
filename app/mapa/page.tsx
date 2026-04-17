@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export default function MapaPage() {
     return (
-        <Suspense fallback={<div className="w-full h-screen bg-slate-950 flex items-center justify-center animate-pulse text-slate-400 font-bold">Cargando Plataforma...</div>}>
+        <Suspense fallback={<div className="w-full h-screen bg-transparent flex items-center justify-center animate-pulse text-slate-400 font-bold">Cargando Plataforma...</div>}>
             <MapaView />
         </Suspense>
     );

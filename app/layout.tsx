@@ -3,8 +3,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-    title: "Se Busca Intendente Godoy Cruz - Inteligencia Territorial",
-    description: "Plataforma de auditoría ciudadana para el departamento de Godoy Cruz, Mendoza.",
+    title: "GODOY CRUZ SIN GESTIÓN",
+    description: "Plataforma de auditoría ciudadana para visibilizar el estado real de Godoy Cruz.",
     manifest: "/manifest.json",
 };
 
