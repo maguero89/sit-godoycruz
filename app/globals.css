@@ -47,20 +47,19 @@ body {
 
 @layer utilities {
   .concrete-text-3d {
-    background: url('/branding/text_style.png') center/cover;
+    background: url('/branding/violet_concrete.png') center/cover;
     -webkit-background-clip: text !important;
     background-clip: text !important;
     color: transparent !important;
     -webkit-text-fill-color: transparent !important;
     
-    /* Deep 3D extrusion to match the user's image, ending with a dark shadow */
-    -webkit-text-stroke: 1px rgba(0, 0, 0, 0.4);
-    filter: drop-shadow(1px 1px 0px #4a3b5c)
-            drop-shadow(2px 2px 0px #3a2e49)
-            drop-shadow(3px 3px 0px #2a2137)
-            drop-shadow(4px 4px 0px #1a1422)
-            drop-shadow(6px 8px 15px rgba(0,0,0,0.9));
-    letter-spacing: 0.05em;
+    /* Simulate 3D and concrete worn out look */
+    -webkit-text-stroke: 1px rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(1px 1px 0px rgba(88, 28, 135, 1)) 
+            drop-shadow(2px 3px 0px rgba(76, 29, 149, 1)) 
+            drop-shadow(3px 5px 0px rgba(59, 7, 100, 1)) 
+            drop-shadow(5px 8px 15px rgba(0,0,0,0.8));
+    letter-spacing: 0.02em;
   }
 }
 
